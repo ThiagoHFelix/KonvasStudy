@@ -1,0 +1,332 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/konva@7.0.3/konva.min.js"></script>
+    <meta charset="utf-8" />
+    <title>Konva JS</title>
+    <style>
+        #stage {
+            width  : 90vw;
+            height : 80vh;
+            margin : auto;
+            margin-top : 50px;
+            border : 1px solid black;
+        }
+        #buttons-group {
+            border: 1px solid black;
+            margin: auto;
+            margin-top: 40px;
+            padding-top: 40px;
+            padding-left: 20px;
+            width  : 85vw;
+            height : 60px;
+        }
+        .button {
+            padding: 20px;
+            border : 1px solid black;
+            margin: 10px;
+            background: blueviolet;
+            color: white 
+        }
+        .button:hover {
+            border: 5px solid black;
+            cursor: pointer;
+        }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <div id="buttons-group"> 
+        <a id="rotate" class="button" onclick="rotateImage()"> Rotacionar </a> 
+        <a id="zoomIn" class="button" onclick="zoomImage('in')"> Zoom In </a> 
+        <a id="zoomOut" class="button" onclick="zoomImage('out')"> Zoom Out </a> 
+    </div>
+    <script>
+
+        var stage = null;
+        window.addEventListener("load",() => {startProject()});
+
+        function startProject()
+        {
+            let imageUrl = 'https://images.unsplash.com/photo-1543813092-6d825ed30039?ixlib=rb-1.8.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=100';
+            // let imageUrl = 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1500&q=80';
+            let imageObject = new Image();
+            imageObject.src = imageUrl;
+
+            stage =  new Konva.Stage({
+                container   : 'stage',
+                width       : document.getElementById('stage').offsetWidth,
+                height      : document.getElementById('stage').offsetHeight, 
+            });
+
+            let layer = new Konva.Layer();
+            let boxLayer = new Konva.Layer();
+
+            let boxGroupData = {
+                width : stage.width() / 2,
+                height : stage.height() / 1.5
+            };
+
+            let boxGroup = new Konva.Group({
+                name : 'boxGroup',
+                x : stage.width() / 2 - boxGroupData.width / 2,
+                y : stage.height() / 2 - boxGroupData.height / 2,
+                width : boxGroupData.width,
+                height: boxGroupData.height
+            });
+
+            let boxGroupClip = new Konva.Group({
+                name : 'boxGroupClip',
+                x : 0,
+                y : 0,
+                width : boxGroupData.width,
+                height: boxGroupData.height,
+                draggable : false,
+                clip : {
+                    x : 0,
+                    y : 0,
+                    width : boxGroupData.width,
+                    height: boxGroupData.height,
+                }
+            });
+
+            let limitBox = new Konva.Rect({
+                name : 'limitBox',
+                width : boxGroupData.width,
+                height: boxGroupData.height,
+                stroke: 'red',
+                strokeWidth: 2,
+                x : 0,
+                y : 0,
+                draggable : true
+            });
+
+            let draggableCircle = new Konva.Circle({
+                name :  'draggableCircle',
+                x : limitBox.width() / 2,
+                y : limitBox.height() / 2,
+                radius : 20,
+                fill : 'red',
+                draggable :  true
+            }); 
+
+            let transformer = new Konva.Transformer();
+            let imageOverlay = null;
+
+            imageObject.onload = function(){
+                let image = new Konva.Image({
+                    name    : 'mainImage',
+                    image   : imageObject,
+                    width   : imageObject.naturalWidth,
+                    height  : imageObject.naturalHeight,
+                    draggable: false
+                });
+
+                imageOverlay = image.clone({
+                    opacity : 0.7,
+                    name    : 'overlayImage'
+                });
+           
+                boxGroup.add(imageOverlay);
+                boxGroupClip.add(image);
+                limitBox.moveToTop();
+                draggableCircle.moveToTop();
+                layer.batchDraw();
+                fitImageOnBox(image,limitBox);
+                fitImageOnBox(imageOverlay,limitBox);
+            };
+
+            //XXX EVENTS
+            draggableCircle.on('dragmove',function(e){
+                let mainImage = boxGroupClip.findOne('.mainImage');
+                if(mainImage)
+                {
+                    let newPositions = {
+                        x : mainImage.x() + e.evt.movementX,
+                        y : mainImage.y() + e.evt.movementY
+                    }
+              
+                    //XXX Verificando as novas posições da image
+                    if(isShapeInsideReference(mainImage.clone({ x : newPositions.x, y : newPositions.y }),limitBox))
+                    {
+                        mainImage.x(newPositions.x);
+                        mainImage.y(newPositions.y);
+                        imageOverlay.x(mainImage.x());
+                        imageOverlay.y(mainImage.y());
+                    }
+                }
+                draggableCircle.getLayer().batchDraw();  
+            });
+
+            draggableCircle.on('dragend',function(e){
+                draggableCircle.x(boxGroup.width() / 2);
+                draggableCircle.y(boxGroup.height() / 2);
+                draggableCircle.getLayer().batchDraw();
+            });
+
+            draggableCircle.on('mouseenter',() => {
+                stage.container().style.cursor = 'move';
+            });
+            draggableCircle.on('mouseleave',() => {
+                stage.container().style.cursor = 'default';
+            });
+
+            limitBox.on('dragmove',function(e){
+                boxGroup.x(boxGroup.x() + e.evt.movementX);
+                boxGroup.y(boxGroup.y() + e.evt.movementY);
+                limitBox.x(0);
+                limitBox.y(0);
+                draggableCircle.getLayer().batchDraw();  
+            });
+
+            //transformer.nodes([limitBox]);
+            boxGroup.add(limitBox);
+            boxGroup.add(draggableCircle)
+            boxGroup.add(boxGroupClip);
+            layer.add(boxGroup);
+            layer.add(transformer);
+            stage.add(layer);
+          
+            layer.draw();
+         
+        }
+
+        function fitImageOnBox(image,box)
+        {
+            let aspectRatioBox = box.width() / box.height();
+            let aspectRatopImage = image.width() / image.height();
+            let newWidth = 0, newHeight = 0, scale = 1;
+
+            if(aspectRatopImage < 1)
+            {
+                newWidth = box.width();
+                newHeight = newWidth / aspectRatopImage;
+            }
+            else
+            {
+                newHeight = box.height();
+                newWidth  = newHeight * aspectRatopImage; 
+            }    
+            
+            image.scale({
+                x : newWidth / image.width(),
+                y : newHeight / image.height()
+            });
+
+            image.getLayer().batchDraw();
+            centerImageOnBox(image,box);
+        }
+
+        function centerImageOnBox(image,box)
+        {
+            image.x(box.width() / 2 - image.width() * image.scaleX() / 2);
+            image.y(box.height() / 2 - image.height() * image.scaleY() / 2);
+            image.getLayer().batchDraw();
+        }
+
+        function getShapePosition(shape)
+        {   
+            return {
+                topLeft : {
+                    x : shape.x(),
+                    y : shape.y()
+                },
+                topRight : {
+                    x : shape.x() + shape.width() * shape.scaleX(),
+                    y : shape.y()
+                },
+                bottomLeft : {
+                    x : shape.x(),
+                    y : shape.y() + shape.height() * shape.scaleY()
+                },
+                bottomRight : {
+                    x : shape.x() + shape.width() * shape.scaleX(),
+                    y : shape.y() + shape.height() * shape.scaleY()
+                }                
+            }
+        }
+
+        function isShapeInsideReference(shape,reference)
+        {
+            let shapePositions     = getShapePosition(shape);
+            let referencePositions = getShapePosition(reference);
+        
+            if(shapePositions.topLeft.x > referencePositions.topLeft.x || shapePositions.topLeft.y > referencePositions.topLeft.y)
+            {
+                return false;
+            }
+            if(shapePositions.bottomLeft.x > referencePositions.bottomLeft.x || shapePositions.bottomLeft.y < referencePositions.bottomLeft.y)
+            {
+                return false;
+            }
+            if(shapePositions.topRight.x < referencePositions.topRight.x || shapePositions.topRight.y > referencePositions.topRight.y)
+            {
+                return false;
+            }
+            if(shapePositions.bottomRight.x < referencePositions.bottomRight.x || shapePositions.bottomRight.y < referencePositions.bottomRight.y)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        function getRotateImagePosition(angle,point,center)
+        {
+            angle = (angle) * (Math.PI/180); // Convert to radians
+            let rotatedX = Math.cos(angle) * (point.x - center.x) - Math.sin(angle) * (point.y-center.y) + center.x;
+            let rotatedY = Math.sin(angle) * (point.x - center.x) + Math.cos(angle) * (point.y - center.y) + center.y;
+            return {
+                x : rotatedX,
+                y : rotatedY
+            }
+        }    
+
+        function rotateImage()
+        {
+            let mainImage = stage.findOne('.mainImage');
+            let overlayImage = stage.findOne('.overlayImage');
+            let limitBox = stage.findOne('.limitBox');
+
+            mainImage.rotate(90);
+            overlayImage.rotation(mainImage.rotation());
+      
+            mainImage.position(getRotateImagePosition(
+                mainImage.rotation(),
+                { 
+                    x : limitBox.width() / 2 - mainImage.width() * mainImage.scaleX() / 2, 
+                    y : limitBox.height() / 2 - mainImage.height() * mainImage.scaleY() / 2 
+                }, 
+                { 
+                    x : limitBox.width() / 2,
+                    y : limitBox.height() / 2 
+                } 
+            ));
+            overlayImage.position(mainImage.position());
+
+            mainImage.getLayer().batchDraw();
+        }
+
+        function zoomImage(type = 'in')
+        {
+            let mainImage    = stage.findOne('.mainImage');
+            let overlayImage = stage.findOne('.overlayImage');
+            let limitBox     = stage.findOne('.limitBox');
+            let scaleBy      = 1.08, newScale = mainImage.scaleX();  
+
+            newScale = type === 'in' ?  mainImage.scaleX() * scaleBy : mainImage.scaleX() / scaleBy;
+            
+            mainImage.scale({
+                x : newScale,
+                y : newScale
+            });
+            overlayImage.scale(mainImage.scale());
+            mainImage.getLayer().batchDraw();
+        }
+        
+
+    </script>
+  
+</body>
+</html>
