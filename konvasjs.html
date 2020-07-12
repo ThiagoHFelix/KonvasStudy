@@ -49,8 +49,8 @@
 
         function startProject()
         {
-            let imageUrl = 'https://images.unsplash.com/photo-1543813092-6d825ed30039?ixlib=rb-1.8.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=100';
-            // let imageUrl = 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1500&q=80';
+            let imageUrl = 'https://images.unsplash.com/photo-1543813092-6d825ed30039?ixlib=rb-1.8.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=900&h=900&q=100';
+            // let imageUrl = 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1500&h1500&q=80';
             let imageObject = new Image();
             imageObject.src = imageUrl;
 
@@ -197,9 +197,62 @@
             let aspectRatioBox = box.width() / box.height();
             let aspectRatopImage = image.width() / image.height();
             let newWidth = 0, newHeight = 0, scale = 1;
-          
+
+            console.clear();
+            console.log("aspectRatopImage",aspectRatopImage);
+            console.log("aspectRatioBox", aspectRatioBox);
+            console.log('image',[image.width() ,image.height()])
+     
             //XXX PORTRAIT
             if(aspectRatopImage < 1)
+            {
+                if(aspectRatioBox < 1)
+                {
+                    if(aspectRatopImage < aspectRatioBox)
+                    {
+                        newWidth = box.width() * [Math.abs(aspectRatopImage - aspectRatioBox) + 1];
+                        newHeight = newWidth / aspectRatopImage;
+                    }
+                    else
+                    {
+                        newHeight = box.height();
+                        newWidth  = newHeight * aspectRatopImage; 
+                    }
+                   
+                }
+                else
+                {
+                    newWidth = box.width();
+                    newHeight = newWidth / aspectRatopImage;
+                }
+            }
+            //XXX LANDSCAPE
+            if(aspectRatopImage > 1)
+            {
+                if(aspectRatioBox > 1)
+                {
+                    //XXX PROPORÇÃO MENOR QUE O BOX
+                    if(aspectRatopImage < aspectRatioBox)
+                    {
+                        newHeight = box.height() * [(aspectRatopImage - aspectRatioBox) + 1];
+                        newWidth  = newHeight * aspectRatopImage;   
+                    }
+                    else
+                    {
+                        newHeight = box.height();
+                        newWidth  = newHeight * aspectRatopImage;
+                    }
+                }
+                else
+                {
+                    newWidth = box.width();
+                    newHeight = newWidth / aspectRatopImage;
+                }
+                newHeight = box.height() * [(aspectRatopImage - aspectRatioBox) + 1];
+                        newWidth  = newHeight * aspectRatopImage;  
+            } 
+            //XXX SQUARE
+            if(aspectRatopImage === 1)
             {
                 if(aspectRatioBox > 1)
                 {
@@ -209,15 +262,9 @@
                 else
                 {
                     newHeight = box.height();
-                    newWidth  = newHeight * aspectRatopImage; 
+                    newWidth  = newHeight * aspectRatopImage;
                 }
-            }
-            //XXX LANDSCAPE or SQUARE
-            else
-            {
-                newHeight = box.height();
-                newWidth  = newHeight * aspectRatopImage; 
-            }  
+            }   
                
             
             image.scale({
