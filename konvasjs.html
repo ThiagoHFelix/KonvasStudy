@@ -7,7 +7,7 @@
     <title>Konva JS</title>
     <style>
         #stage {
-            width  : 90vw;
+            width  : 80vw;
             height : 80vh;
             margin : auto;
             margin-top : 50px;
@@ -197,17 +197,28 @@
             let aspectRatioBox = box.width() / box.height();
             let aspectRatopImage = image.width() / image.height();
             let newWidth = 0, newHeight = 0, scale = 1;
-
+          
+            //XXX PORTRAIT
             if(aspectRatopImage < 1)
             {
-                newWidth = box.width();
-                newHeight = newWidth / aspectRatopImage;
+                if(aspectRatioBox > 1)
+                {
+                    newWidth = box.width();
+                    newHeight = newWidth / aspectRatopImage;
+                }
+                else
+                {
+                    newHeight = box.height();
+                    newWidth  = newHeight * aspectRatopImage; 
+                }
             }
+            //XXX LANDSCAPE or SQUARE
             else
             {
                 newHeight = box.height();
                 newWidth  = newHeight * aspectRatopImage; 
-            }    
+            }  
+               
             
             image.scale({
                 x : newWidth / image.width(),
@@ -330,3 +341,4 @@
   
 </body>
 </html>
+
