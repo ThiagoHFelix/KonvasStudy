@@ -8,7 +8,7 @@
     <style>
         #stage {
             width  : 80vw;
-            height : 80vh;
+            height : 50vh;
             margin : auto;
             margin-top : 50px;
             border : 1px solid black;
@@ -49,7 +49,7 @@
 
         function startProject()
         {
-            let imageUrl = 'https://images.unsplash.com/photo-1543813092-6d825ed30039?ixlib=rb-1.8.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=900&h=900&q=100';
+            let imageUrl = 'https://images.unsplash.com/photo-1543813092-6d825ed30039?ixlib=rb-1.8.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1980&h=900&q=100';
             // let imageUrl = 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1500&h1500&q=80';
             let imageObject = new Image();
             imageObject.src = imageUrl;
@@ -65,7 +65,7 @@
 
             let boxGroupData = {
                 width : stage.width() / 2,
-                height : stage.height() / 1.5
+                height : stage.height() / 2
             };
 
             let boxGroup = new Konva.Group({
@@ -194,82 +194,96 @@
 
         function fitImageOnBox(image,box)
         {
-            let aspectRatioBox = box.width() / box.height();
-            let aspectRatopImage = image.width() / image.height();
-            let newWidth = 0, newHeight = 0, scale = 1;
+            
+            let newWidth  = 0, newHeight = 0;
+            let imageData = getShapeAttrs(image);
+            let boxData   = getShapeAttrs(box);
+            let aspectRatioBox   = boxData.aspectRatio;
+            let aspectRatioImage = imageData.aspectRatio;
 
             console.clear();
-            console.log("aspectRatopImage",aspectRatopImage);
+            console.log("aspectRatioImage",aspectRatioImage);
             console.log("aspectRatioBox", aspectRatioBox);
-            console.log('image',[image.width() ,image.height()])
+            console.log('image',imageData)
      
-            //XXX PORTRAIT
-            if(aspectRatopImage < 1)
+            //XXX GERA SEMPRE O TAMANHO APARTIR DO LADO DA IMAGEM EM RELAÇÃO AO
+            // BOX COM O MENOR TAMANHO
+
+
+            //XXX BOX PORTRAIT
+            if(aspectRatioBox < 1)
             {
-                if(aspectRatioBox < 1)
+                //XXX IMAGE PORTRAIT
+                if(aspectRatioImage < 1)
                 {
-                    if(aspectRatopImage < aspectRatioBox)
+                    //XXX aspect ratio da imagem menor que o box
+                    if(aspectRatioImage < aspectRatioBox)
                     {
-                        newWidth = box.width() * [Math.abs(aspectRatopImage - aspectRatioBox) + 1];
-                        newHeight = newWidth / aspectRatopImage;
+                        newWidth = boxData.width;
+                        newHeight = newWidth / aspectRatioImage;
                     }
                     else
                     {
-                        newHeight = box.height();
-                        newWidth  = newHeight * aspectRatopImage; 
+                        newHeight = boxData.height;
+                        newWidth  = newHeight * aspectRatioImage; 
                     }
-                   
                 }
                 else
                 {
-                    newWidth = box.width();
-                    newHeight = newWidth / aspectRatopImage;
+                    //XXX Aqui o aspect ratio sempre vai ser igual ou maior que 1
+                    newHeight = boxData.height;
+                    newWidth  = newHeight * aspectRatioImage; 
                 }
+                
             }
-            //XXX LANDSCAPE
-            if(aspectRatopImage > 1)
+            //XXX BOX SQUARE    
+            if(aspectRatioBox === 1)
             {
-                if(aspectRatioBox > 1)
+
+                //XXX IMAGE PORTRAIT
+                if(aspectRatioImage < 1)
                 {
-                    //XXX PROPORÇÃO MENOR QUE O BOX
-                    if(aspectRatopImage < aspectRatioBox)
+                    newWidth = boxData.width;
+                    newHeight = newWidth / aspectRatioImage;
+                }
+                else
+                {
+                    //XXX IMAGE LANDSCAPE OR SQUARE
+                    newHeight = boxData.height;
+                    newWidth  = newHeight * aspectRatioImage; 
+                }
+
+            }
+            //XXX BOX LANDSCAPE
+            if(aspectRatioBox > 1)
+            {
+                if(aspectRatioImage > 1)
+                {
+                    if(aspectRatioImage < aspectRatioBox)
                     {
-                        newHeight = box.height() * [(aspectRatopImage - aspectRatioBox) + 1];
-                        newWidth  = newHeight * aspectRatopImage;   
+                        //XXX IMAGE LANDSCAPE 
+                        newWidth = boxData.width;
+                        newHeight = newWidth / aspectRatioImage;
                     }
                     else
                     {
-                        newHeight = box.height();
-                        newWidth  = newHeight * aspectRatopImage;
-                    }
+                        //XXX IMAGE LANDSCAPE 
+                        newHeight = boxData.height;
+                        newWidth  = newHeight * aspectRatioImage; 
+                    }    
                 }
                 else
                 {
-                    newWidth = box.width();
-                    newHeight = newWidth / aspectRatopImage;
+                    //XXX IMAGE PORTRAIT OR SQUARE
+                    newWidth = boxData.width;
+                    newHeight = newWidth / aspectRatioImage;
                 }
-                newHeight = box.height() * [(aspectRatopImage - aspectRatioBox) + 1];
-                        newWidth  = newHeight * aspectRatopImage;  
-            } 
-            //XXX SQUARE
-            if(aspectRatopImage === 1)
-            {
-                if(aspectRatioBox > 1)
-                {
-                    newWidth = box.width();
-                    newHeight = newWidth / aspectRatopImage;
-                }
-                else
-                {
-                    newHeight = box.height();
-                    newWidth  = newHeight * aspectRatopImage;
-                }
-            }   
-               
+
+            }
             
             image.scale({
-                x : newWidth / image.width(),
-                y : newHeight / image.height()
+                x : newWidth / imageData.width,
+                y : newHeight / imageData.height
             });
 
             image.getLayer().batchDraw();
@@ -278,8 +292,17 @@
 
         function centerImageOnBox(image,box)
         {
-            image.x(box.width() / 2 - image.width() * image.scaleX() / 2);
-            image.y(box.height() / 2 - image.height() * image.scaleY() / 2);
+            image.position(getRotateImagePosition(
+                image.rotation(),
+                { 
+                    x : box.width() / 2 - image.width() * image.scaleX() / 2, 
+                    y : box.height() / 2 - image.height() * image.scaleY() / 2 
+                }, 
+                { 
+                    x : box.width() / 2,
+                    y : box.height() / 2 
+                } 
+            ));
             image.getLayer().batchDraw();
         }
 
@@ -346,8 +369,9 @@
             let mainImage = stage.findOne('.mainImage');
             let overlayImage = stage.findOne('.overlayImage');
             let limitBox = stage.findOne('.limitBox');
+            let rotate  = mainImage.rotation() + 90;
 
-            mainImage.rotate(90);
+            mainImage.rotation(rotate==360?0:rotate);
             overlayImage.rotation(mainImage.rotation());
       
             mainImage.position(getRotateImagePosition(
@@ -362,6 +386,8 @@
                 } 
             ));
             overlayImage.position(mainImage.position());
+            fitImageOnBox(mainImage,limitBox);
+            fitImageOnBox(overlayImage,limitBox);
 
             mainImage.getLayer().batchDraw();
         }
@@ -381,6 +407,21 @@
             });
             overlayImage.scale(mainImage.scale());
             mainImage.getLayer().batchDraw();
+        }
+
+        function getShapeAttrs(shape)
+        {
+            let shapeAttrs = {
+                width  : shape.width(),
+                height : shape.height(),
+                rotation : shape.rotation() 
+            }
+            return {
+                width       : shapeAttrs.rotation === 90 || shapeAttrs.rotation === 270 ? shapeAttrs.height : shapeAttrs.width,
+                height      : shapeAttrs.rotation === 90 || shapeAttrs.rotation === 270 ? shapeAttrs.width : shapeAttrs.height, 
+                rotation    : shapeAttrs.rotation,
+                aspectRatio : shapeAttrs.rotation === 90 || shapeAttrs.rotation === 270 ? shapeAttrs.height / shapeAttrs.width : shapeAttrs.width / shapeAttrs.height
+            }
         }
         
 
