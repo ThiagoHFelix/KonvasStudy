@@ -8,7 +8,7 @@
     <style>
         #stage {
             width  : 80vw;
-            height : 50vh;
+            height : 80vh;
             margin : auto;
             margin-top : 50px;
             border : 1px solid black;
@@ -135,9 +135,68 @@
                 layer.batchDraw();
                 fitImageOnBox(image,limitBox);
                 fitImageOnBox(imageOverlay,limitBox);
+
+                
             };
 
             //XXX EVENTS
+            stage.on('wheel',(e) => {
+
+                let mainImage    = stage.findOne('.mainImage');
+                let boxGroup     = stage.findOne('.boxGroup');
+                let overlayImage = stage.findOne('.overlayImage');
+                let limitBox     = stage.findOne('.limitBox');
+                let scaleBy      = 1.01, newScale = mainImage.scaleX();  
+
+                // console.log("boxGroup",boxGroup.position());
+
+                newScale = e.evt.deltaY < 0 ?  mainImage.scaleX() * scaleBy : mainImage.scaleX() / scaleBy;
+
+                var pointer = stage.getPointerPosition();
+
+                var imageStage = {
+                    x : mainImage.x() + boxGroup.x(),
+                    y : mainImage.y() + boxGroup.y()
+                }
+                var pointer = {
+                    x : pointer.x - boxGroup.x(),
+                    y : pointer.y - boxGroup.y()
+                }
+
+                var mousePointTo = {
+                    x: (pointer.x - mainImage.x()) / mainImage.scaleX(),
+                    y: (pointer.y - mainImage.y()) / mainImage.scaleX(), 
+                };
+
+                console.clear()
+                console.log("pointer",pointer);
+                console.log("mousePointTo",mousePointTo);
+                console.log("mainImage",mainImage.position());
+                console.log("imageStage",imageStage);
+                console.log("boxGroup",boxGroup.position());
+
+                var newPos = {
+                    x: pointer.x - mousePointTo.x * newScale,
+                    y: pointer.y - mousePointTo.y * newScale,
+                };
+
+                console.log("newPos",newPos);
+
+                mainImage.scale({
+                    x : newScale,
+                    y : newScale
+                });
+                overlayImage.scale(mainImage.scale());
+
+                mainImage.position(newPos);
+                overlayImage.position(newPos);
+                console.log("newPos",JSON.stringify(newPos));
+                mainImage.getLayer().batchDraw();
+                overlayImage.getLayer().batchDraw();
+
+            }); 
+
+
             draggableCircle.on('dragmove',function(e){
                 let mainImage = boxGroupClip.findOne('.mainImage');
                 if(mainImage)
@@ -180,7 +239,7 @@
                 draggableCircle.getLayer().batchDraw();  
             });
 
-            //transformer.nodes([limitBox]);
+            //transformer.nodes([boxGroup]);
             boxGroup.add(limitBox);
             boxGroup.add(draggableCircle)
             boxGroup.add(boxGroupClip);
@@ -206,9 +265,9 @@
             console.log("aspectRatioBox", aspectRatioBox);
             console.log('image',imageData)
      
-            //XXX GERA SEMPRE O TAMANHO APARTIR DO LADO DA IMAGEM EM RELAÇÃO AO
-            // BOX COM O MENOR TAMANHO
-
+            /*
+                GERA SEMPRE O TAMANHO APARTIR DO LADO DA IMAGEM EM RELAÇÃO AO BOX COM O MENOR TAMANHO
+            */
 
             //XXX BOX PORTRAIT
             if(aspectRatioBox < 1)
